@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mega-Sena</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f5f5;
+  padding: 20px;
+}
+
+h1 {
+  text-align: center;
+}
+
+.slips {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.slip {
+  background: #fff;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.1);
+}
+
+.numbers {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 6px;
+}
+
+.num {
+  padding: 8px 0;
+  text-align: center;
+  border-radius: 4px;
+  background: #eee;
+  cursor: pointer;
+  user-select: none;
+}
+
+.num.selected {
+  background: #2e7d32;
+  color: #fff;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Mega-Sena</h1>
+
+<div class="slips">
+  <div class="slip">
+    <div class="numbers" id="numbers"></div>
+  </div>
+</div>
+
+<script>
+const container = document.getElementById("numbers");
+
+for (let i = 1; i <= 60; i++) {
+  const el = document.createElement("div");
+  el.className = "num";
+  el.textContent = i.toString().padStart(2, "0");
+
+  el.onclick = () => {
+    el.classList.toggle("selected");
+  };
+
+  container.appendChild(el);
+}
+</script>
+
+</body>
+</html>
