@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mega-Sena</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+    }
+
+    .numbers {
+      display: grid;
+      grid-template-columns: repeat(10, 1fr);
+      gap: 8px;
+      max-width: 400px;
+      margin: auto;
+    }
+
+    .num {
+      background: #e0e0e0;
+      padding: 10px 0;
+      text-align: center;
+      border-radius: 6px;
+      cursor: pointer;
+      user-select: none;
+      font-weight: bold;
+    }
+
+    .num.selected {
+      background: #2e7d32;
+      color: #fff;
+    }
+  </style>
+</head>
+
+<body>
+
+<h1>Mega-Sena</h1>
+
+<div class="numbers" id="numbers"></div>
+
+<script>
+  const numbers = document.getElementById("numbers");
+
+  for (let i = 1; i <= 60; i++) {
+    const div = document.createElement("div");
+    div.className = "num";
+    div.textContent = i.toString().padStart(2, "0");
+
+    div.addEventListener("click", () => {
+      div.classList.toggle("selected");
+    });
+
+    numbers.appendChild(div);
+  }
+</script>
+
+</body>
+</html>
