@@ -2,93 +2,80 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mega-Sena – Gerador de Apostas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
 body {
   font-family: Arial, sans-serif;
   background: #f4f4f4;
-  text-align: center;
   padding: 20px;
-}
-
-h1 {
-  margin-bottom: 10px;
 }
 
 .container {
   max-width: 420px;
   margin: auto;
+  text-align: center;
 }
 
-.info {
-  margin: 15px 0;
+h1 {
+  color: #2e7d32;
 }
 
 input {
   width: 100%;
   padding: 10px;
-  margin-top: 5px;
-  font-size: 16px;
+  margin: 10px 0;
 }
 
 .grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
   gap: 8px;
-  margin-top: 20px;
 }
 
 .numero {
   padding: 12px 0;
   border-radius: 8px;
-  background: #e0e0e0;
+  background: #ddd;
   cursor: pointer;
   font-weight: bold;
 }
 
-.numero.selecionado {
+.numero.sel {
   background: #2e7d32;
   color: white;
-}
-
-.botoes {
-  margin-top: 20px;
 }
 
 button {
-  padding: 12px 16px;
+  padding: 10px 15px;
   margin: 5px;
-  font-size: 15px;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
+  font-size: 14px;
   cursor: pointer;
 }
 
-.btn-limpar {
-  background: #b71c1c;
-  color: white;
+.add { background: #1976d2; color: white; }
+.pdf { background: #2e7d32; color: white; }
+.clear { background: #b71c1c; color: white; }
+
+.apostas {
+  margin-top: 15px;
+  text-align: left;
 }
 
-.btn-pdf {
-  background: #2e7d32;
-  color: white;
-}
-
-.aposta {
-  margin-top: 20px;
-  font-weight: bold;
+.aposta-item {
+  background: white;
+  padding: 8px;
+  border-radius: 6px;
+  margin-bottom: 5px;
 }
 
 /* PDF */
 @media print {
-  button, input {
-    display: none;
-  }
-  body {
-    background: white;
-  }
+  body { background: white; }
+  button, .grid { display: none; }
 }
 </style>
 </head>
@@ -98,71 +85,90 @@ button {
 <div class="container">
   <h1>Mega-Sena</h1>
 
-  <div class="info">
-    <label>Nome do Apostador</label>
-    <input id="nome" placeholder="Ex: João da Silva">
-  </div>
+  <input id="nome" placeholder="Nome do Apostador">
 
   <div class="grid" id="grid"></div>
 
-  <div class="aposta" id="apostaTexto"></div>
+  <button class="add" onclick="adicionarAposta()">Adicionar aposta</button>
+  <button class="clear" onclick="limpar()">Limpar seleção</button>
 
-  <div class="botoes">
-    <button class="btn-limpar" onclick="limpar()">Limpar</button>
-    <button class="btn-pdf" onclick="gerarPDF()">Gerar PDF</button>
-  </div>
+  <div class="apostas" id="lista"></div>
+
+  <button class="pdf" onclick="gerarPDF()">Gerar PDF</button>
 </div>
 
 <script>
 const grid = document.getElementById("grid");
-const apostaTexto = document.getElementById("apostaTexto");
+const lista = document.getElementById("lista");
 let selecionados = [];
+let apostas = JSON.parse(localStorage.getItem("apostas")) || [];
 
-// Criar números
-for (let i = 1; i <= 60; i++) {
-  const div = document.createElement("div");
-  div.className = "numero";
-  div.innerText = i.toString().padStart(2, "0");
-
-  div.onclick = () => selecionar(div, i);
-  grid.appendChild(div);
+function proximoSorteio() {
+  const hoje = new Date();
+  let d = new Date(hoje);
+  while (![3,6].includes(d.getDay())) d.setDate(d.getDate()+1);
+  return d.toLocaleDateString("pt-BR");
 }
 
-function selecionar(elemento, numero) {
-  if (selecionados.includes(numero)) {
-    selecionados = selecionados.filter(n => n !== numero);
-    elemento.classList.remove("selecionado");
+for (let i=1;i<=60;i++) {
+  const d=document.createElement("div");
+  d.className="numero";
+  d.textContent=i.toString().padStart(2,"0");
+  d.onclick=()=>toggle(d,i);
+  grid.appendChild(d);
+}
+
+function toggle(el,n) {
+  if (selecionados.includes(n)) {
+    selecionados=selecionados.filter(x=>x!==n);
+    el.classList.remove("sel");
   } else {
-    if (selecionados.length >= 6) {
-      alert("Você só pode escolher 6 dezenas.");
-      return;
-    }
-    selecionados.push(numero);
-    elemento.classList.add("selecionado");
+    if (selecionados.length>=6) return alert("Máximo 6 dezenas");
+    selecionados.push(n);
+    el.classList.add("sel");
   }
-  atualizarTexto();
 }
 
-function atualizarTexto() {
-  apostaTexto.innerText =
-    selecionados.length === 6
-      ? "Aposta: " + selecionados.sort((a,b)=>a-b).join(" - ")
-      : "Selecione 6 dezenas";
+function adicionarAposta() {
+  if (selecionados.length!==6) return alert("Escolha 6 dezenas");
+  apostas.push([...selecionados].sort((a,b)=>a-b));
+  localStorage.setItem("apostas",JSON.stringify(apostas));
+  selecionados=[];
+  document.querySelectorAll(".numero").forEach(n=>n.classList.remove("sel"));
+  render();
+}
+
+function render() {
+  lista.innerHTML="";
+  apostas.forEach((a,i)=>{
+    const div=document.createElement("div");
+    div.className="aposta-item";
+    div.textContent=`Aposta ${i+1}: ${a.join(" - ")}`;
+    lista.appendChild(div);
+  });
 }
 
 function limpar() {
-  selecionados = [];
-  document.querySelectorAll(".numero").forEach(n => n.classList.remove("selecionado"));
-  apostaTexto.innerText = "";
+  selecionados=[];
+  document.querySelectorAll(".numero").forEach(n=>n.classList.remove("sel"));
 }
 
 function gerarPDF() {
-  if (selecionados.length !== 6) {
-    alert("Escolha exatamente 6 dezenas para gerar o PDF.");
-    return;
-  }
+  if (apostas.length===0) return alert("Nenhuma aposta adicionada");
+  document.body.innerHTML = `
+    <h1 style="color:#2e7d32">Mega-Sena</h1>
+    <p><b>Apostador:</b> ${nome.value || "-"}</p>
+    <p><b>Data do sorteio:</b> ${proximoSorteio()}</p>
+    ${apostas.map((a,i)=>`
+      <div style="margin:8px 0;padding:8px;border:1px solid #2e7d32;border-radius:6px">
+        <b>Aposta ${i+1}</b><br>${a.join(" - ")}
+      </div>`).join("")}
+  `;
   window.print();
+  location.reload();
 }
+
+render();
 </script>
 
 </body>
