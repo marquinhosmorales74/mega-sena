@@ -1,66 +1,127 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Mega-Sena</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mega-Sena</title>
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f5f5f5;
-      padding: 20px;
-    }
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background: #f5f5f5;
+  padding: 20px;
+}
 
-    h1 {
-      text-align: center;
-    }
+h1 {
+  text-align: center;
+}
 
-    .numbers {
-      display: grid;
-      grid-template-columns: repeat(10, 1fr);
-      gap: 8px;
-      max-width: 400px;
-      margin: auto;
-    }
+.controls {
+  text-align: center;
+  margin-bottom: 20px;
+}
 
-    .num {
-      background: #e0e0e0;
-      padding: 10px 0;
-      text-align: center;
-      border-radius: 6px;
-      cursor: pointer;
-      user-select: none;
-      font-weight: bold;
-    }
+button {
+  padding: 10px 14px;
+  border: none;
+  border-radius: 6px;
+  background: #2e7d32;
+  color: #fff;
+  font-size: 14px;
+}
 
-    .num.selected {
-      background: #2e7d32;
-      color: #fff;
-    }
-  </style>
+.slip {
+  background: #fff;
+  padding: 15px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+  box-shadow: 0 2px 6px rgba(0,0,0,.1);
+}
+
+.numbers {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.num {
+  background: #e0e0e0;
+  padding: 10px 0;
+  text-align: center;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.num.selected {
+  background: #2e7d32;
+  color: #fff;
+}
+
+.info {
+  text-align: center;
+  margin-top: 10px;
+  font-size: 14px;
+}
+</style>
 </head>
 
 <body>
 
 <h1>Mega-Sena</h1>
 
-<div class="numbers" id="numbers"></div>
+<div class="controls">
+  <button onclick="addSlip()">Nova Aposta</button>
+</div>
+
+<div id="slips"></div>
 
 <script>
-  const numbers = document.getElementById("numbers");
+function addSlip() {
+  const slip = document.createElement("div");
+  slip.className = "slip";
+
+  const numbersDiv = document.createElement("div");
+  numbersDiv.className = "numbers";
+
+  const info = document.createElement("div");
+  info.className = "info";
+  info.textContent = "Escolha até 6 dezenas";
+
+  let selectedCount = 0;
 
   for (let i = 1; i <= 60; i++) {
-    const div = document.createElement("div");
-    div.className = "num";
-    div.textContent = i.toString().padStart(2, "0");
+    const el = document.createElement("div");
+    el.className = "num";
+    el.textContent = i.toString().padStart(2, "0");
 
-    div.addEventListener("click", () => {
-      div.classList.toggle("selected");
-    });
+    el.onclick = () => {
+      if (el.classList.contains("selected")) {
+        el.classList.remove("selected");
+        selectedCount--;
+      } else {
+        if (selectedCount >= 6) {
+          alert("Você só pode escolher 6 dezenas.");
+          return;
+        }
+        el.classList.add("selected");
+        selectedCount++;
+      }
+      info.textContent = `Selecionadas: ${selectedCount}/6`;
+    };
 
-    numbers.appendChild(div);
+    numbersDiv.appendChild(el);
   }
+
+  slip.appendChild(numbersDiv);
+  slip.appendChild(info);
+
+  document.getElementById("slips").appendChild(slip);
+}
+
+// cria a primeira aposta automaticamente
+addSlip();
 </script>
 
 </body>
