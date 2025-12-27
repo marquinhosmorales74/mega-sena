@@ -3,125 +3,166 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mega-Sena</title>
+<title>Mega-Sena – Gerador de Apostas</title>
 
 <style>
 body {
   font-family: Arial, sans-serif;
-  background: #f5f5f5;
+  background: #f4f4f4;
+  text-align: center;
   padding: 20px;
 }
 
 h1 {
-  text-align: center;
+  margin-bottom: 10px;
 }
 
-.controls {
-  text-align: center;
-  margin-bottom: 20px;
+.container {
+  max-width: 420px;
+  margin: auto;
 }
 
-button {
-  padding: 10px 14px;
-  border: none;
-  border-radius: 6px;
-  background: #2e7d32;
-  color: #fff;
-  font-size: 14px;
+.info {
+  margin: 15px 0;
 }
 
-.slip {
-  background: #fff;
-  padding: 15px;
-  border-radius: 10px;
-  margin-bottom: 20px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.1);
+input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 5px;
+  font-size: 16px;
 }
 
-.numbers {
+.grid {
   display: grid;
-  grid-template-columns: repeat(10, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 20px;
 }
 
-.num {
+.numero {
+  padding: 12px 0;
+  border-radius: 8px;
   background: #e0e0e0;
-  padding: 10px 0;
-  text-align: center;
-  border-radius: 6px;
   cursor: pointer;
   font-weight: bold;
 }
 
-.num.selected {
+.numero.selecionado {
   background: #2e7d32;
-  color: #fff;
+  color: white;
 }
 
-.info {
-  text-align: center;
-  margin-top: 10px;
-  font-size: 14px;
+.botoes {
+  margin-top: 20px;
+}
+
+button {
+  padding: 12px 16px;
+  margin: 5px;
+  font-size: 15px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.btn-limpar {
+  background: #b71c1c;
+  color: white;
+}
+
+.btn-pdf {
+  background: #2e7d32;
+  color: white;
+}
+
+.aposta {
+  margin-top: 20px;
+  font-weight: bold;
+}
+
+/* PDF */
+@media print {
+  button, input {
+    display: none;
+  }
+  body {
+    background: white;
+  }
 }
 </style>
 </head>
 
 <body>
 
-<h1>Mega-Sena</h1>
+<div class="container">
+  <h1>Mega-Sena</h1>
 
-<div class="controls">
-  <button onclick="addSlip()">Nova Aposta</button>
+  <div class="info">
+    <label>Nome do Apostador</label>
+    <input id="nome" placeholder="Ex: João da Silva">
+  </div>
+
+  <div class="grid" id="grid"></div>
+
+  <div class="aposta" id="apostaTexto"></div>
+
+  <div class="botoes">
+    <button class="btn-limpar" onclick="limpar()">Limpar</button>
+    <button class="btn-pdf" onclick="gerarPDF()">Gerar PDF</button>
+  </div>
 </div>
 
-<div id="slips"></div>
-
 <script>
-function addSlip() {
-  const slip = document.createElement("div");
-  slip.className = "slip";
+const grid = document.getElementById("grid");
+const apostaTexto = document.getElementById("apostaTexto");
+let selecionados = [];
 
-  const numbersDiv = document.createElement("div");
-  numbersDiv.className = "numbers";
+// Criar números
+for (let i = 1; i <= 60; i++) {
+  const div = document.createElement("div");
+  div.className = "numero";
+  div.innerText = i.toString().padStart(2, "0");
 
-  const info = document.createElement("div");
-  info.className = "info";
-  info.textContent = "Escolha até 6 dezenas";
-
-  let selectedCount = 0;
-
-  for (let i = 1; i <= 60; i++) {
-    const el = document.createElement("div");
-    el.className = "num";
-    el.textContent = i.toString().padStart(2, "0");
-
-    el.onclick = () => {
-      if (el.classList.contains("selected")) {
-        el.classList.remove("selected");
-        selectedCount--;
-      } else {
-        if (selectedCount >= 6) {
-          alert("Você só pode escolher 6 dezenas.");
-          return;
-        }
-        el.classList.add("selected");
-        selectedCount++;
-      }
-      info.textContent = `Selecionadas: ${selectedCount}/6`;
-    };
-
-    numbersDiv.appendChild(el);
-  }
-
-  slip.appendChild(numbersDiv);
-  slip.appendChild(info);
-
-  document.getElementById("slips").appendChild(slip);
+  div.onclick = () => selecionar(div, i);
+  grid.appendChild(div);
 }
 
-// cria a primeira aposta automaticamente
-addSlip();
+function selecionar(elemento, numero) {
+  if (selecionados.includes(numero)) {
+    selecionados = selecionados.filter(n => n !== numero);
+    elemento.classList.remove("selecionado");
+  } else {
+    if (selecionados.length >= 6) {
+      alert("Você só pode escolher 6 dezenas.");
+      return;
+    }
+    selecionados.push(numero);
+    elemento.classList.add("selecionado");
+  }
+  atualizarTexto();
+}
+
+function atualizarTexto() {
+  apostaTexto.innerText =
+    selecionados.length === 6
+      ? "Aposta: " + selecionados.sort((a,b)=>a-b).join(" - ")
+      : "Selecione 6 dezenas";
+}
+
+function limpar() {
+  selecionados = [];
+  document.querySelectorAll(".numero").forEach(n => n.classList.remove("selecionado"));
+  apostaTexto.innerText = "";
+}
+
+function gerarPDF() {
+  if (selecionados.length !== 6) {
+    alert("Escolha exatamente 6 dezenas para gerar o PDF.");
+    return;
+  }
+  window.print();
+}
 </script>
 
 </body>
