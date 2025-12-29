@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Mega-Sena – Gerador de Apostas</title>
+<title>Mega-Sena – Apostas Manuais e Automáticas</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -18,9 +18,7 @@ body {
   text-align: center;
 }
 
-h1 {
-  color: #2e7d32;
-}
+h1 { color: #2e7d32; }
 
 input {
   width: 100%;
@@ -49,7 +47,7 @@ input {
 
 button {
   padding: 10px 14px;
-  margin: 5px;
+  margin: 4px;
   border: none;
   border-radius: 6px;
   font-size: 14px;
@@ -57,6 +55,7 @@ button {
 }
 
 .add { background: #1976d2; color: white; }
+.auto { background: #6a1b9a; color: white; }
 .pdf { background: #2e7d32; color: white; }
 .clear { background: #b71c1c; color: white; }
 
@@ -67,27 +66,9 @@ button {
 
 .aposta-item {
   background: white;
-  padding: 10px;
+  padding: 8px;
   border-radius: 6px;
-  margin-bottom: 6px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.aposta-item span {
-  font-size: 14px;
-}
-
-.excluir {
-  background: #c62828;
-  color: white;
-  border-radius: 50%;
-  width: 28px;
-  height: 28px;
-  font-size: 16px;
-  line-height: 28px;
-  text-align: center;
+  margin-bottom: 5px;
 }
 
 /* PDF */
@@ -107,7 +88,8 @@ button {
 
   <div class="grid" id="grid"></div>
 
-  <button class="add" onclick="adicionarAposta()">Adicionar aposta</button>
+  <button class="add" onclick="adicionarManual()">Adicionar aposta manual</button>
+  <button class="auto" onclick="apostaAutomatica()">Aposta automática</button>
   <button class="clear" onclick="limpar()">Limpar seleção</button>
 
   <div class="apostas" id="lista"></div>
@@ -118,90 +100,111 @@ button {
 <script>
 const grid = document.getElementById("grid");
 const lista = document.getElementById("lista");
+
 let selecionados = [];
 let apostas = JSON.parse(localStorage.getItem("apostas")) || [];
 
-// Próximo sorteio (quarta ou sábado)
-function proximoSorteio() {
-  const hoje = new Date();
-  let d = new Date(hoje);
-  while (![3,6].includes(d.getDay())) d.setDate(d.getDate()+1);
-  return d.toLocaleDateString("pt-BR");
-}
-
-// Criar números
-for (let i=1;i<=60;i++) {
-  const d=document.createElement("div");
-  d.className="numero";
-  d.textContent=i.toString().padStart(2,"0");
-  d.onclick=()=>toggle(d,i);
+// cria grade
+for (let i = 1; i <= 60; i++) {
+  const d = document.createElement("div");
+  d.className = "numero";
+  d.textContent = i.toString().padStart(2, "0");
+  d.onclick = () => toggle(d, i);
   grid.appendChild(d);
 }
 
-function toggle(el,n) {
+function toggle(el, n) {
   if (selecionados.includes(n)) {
-    selecionados=selecionados.filter(x=>x!==n);
+    selecionados = selecionados.filter(x => x !== n);
     el.classList.remove("sel");
   } else {
-    if (selecionados.length>=6) return alert("Máximo 6 dezenas");
+    if (selecionados.length >= 6) return alert("Máximo 6 dezenas");
     selecionados.push(n);
     el.classList.add("sel");
   }
 }
 
-function adicionarAposta() {
-  if (selecionados.length!==6) return alert("Escolha 6 dezenas");
-  apostas.push([...selecionados].sort((a,b)=>a-b));
+function adicionarManual() {
+  if (selecionados.length !== 6) return alert("Escolha 6 dezenas");
+  apostas.push(selecionados.slice().sort((a,b)=>a-b));
   salvar();
   limpar();
-  render();
 }
 
-function excluirAposta(index) {
-  if (!confirm("Excluir esta aposta?")) return;
-  apostas.splice(index,1);
+function apostaAutomatica() {
+  let jogo;
+  do {
+    jogo = gerarJogoInteligente();
+  } while (!jogoValido(jogo));
+
+  apostas.push(jogo.sort((a,b)=>a-b));
   salvar();
-  render();
 }
 
-function salvar() {
-  localStorage.setItem("apostas",JSON.stringify(apostas));
+function gerarJogoInteligente() {
+  const nums = [];
+  while (nums.length < 6) {
+    const n = Math.floor(Math.random() * 60) + 1;
+    if (!nums.includes(n)) nums.push(n);
+  }
+  return nums;
 }
 
-function render() {
-  lista.innerHTML="";
-  apostas.forEach((a,i)=>{
-    const div=document.createElement("div");
-    div.className="aposta-item";
-    div.innerHTML = `
-      <span><b>Aposta ${i+1}:</b> ${a.join(" - ")}</span>
-      <button class="excluir" onclick="excluirAposta(${i})">🗑️</button>
-    `;
-    lista.appendChild(div);
-  });
+function jogoValido(jogo) {
+  const pares = jogo.filter(n => n % 2 === 0).length;
+  const baixos = jogo.filter(n => n <= 30).length;
+
+  // critérios “inteligentes”
+  if (pares < 2 || pares > 4) return false;
+  if (baixos < 2 || baixos > 4) return false;
+
+  // evita sequências longas
+  const ordenado = jogo.slice().sort((a,b)=>a-b);
+  let seq = 1;
+  for (let i = 1; i < ordenado.length; i++) {
+    if (ordenado[i] === ordenado[i-1] + 1) {
+      seq++;
+      if (seq >= 3) return false;
+    } else seq = 1;
+  }
+  return true;
 }
 
 function limpar() {
-  selecionados=[];
-  document.querySelectorAll(".numero").forEach(n=>n.classList.remove("sel"));
+  selecionados = [];
+  document.querySelectorAll(".numero").forEach(n => n.classList.remove("sel"));
+}
+
+function salvar() {
+  localStorage.setItem("apostas", JSON.stringify(apostas));
+  render();
+}
+
+function render() {
+  lista.innerHTML = "";
+  apostas.forEach((a, i) => {
+    const d = document.createElement("div");
+    d.className = "aposta-item";
+    d.textContent = `Aposta ${i+1}: ${a.join(" - ")}`;
+    lista.appendChild(d);
+  });
+}
+
+function proximoSorteio() {
+  const d = new Date();
+  while (![3,6].includes(d.getDay())) d.setDate(d.getDate()+1);
+  return d.toLocaleDateString("pt-BR");
 }
 
 function gerarPDF() {
-  if (apostas.length===0) return alert("Nenhuma aposta adicionada");
-
+  if (apostas.length === 0) return alert("Nenhuma aposta");
   document.body.innerHTML = `
     <h1 style="color:#2e7d32">Mega-Sena</h1>
     <p><b>Apostador:</b> ${nome.value || "-"}</p>
-    <p><b>Data do sorteio:</b> ${proximoSorteio()}</p>
+    <p><b>Próximo sorteio:</b> ${proximoSorteio()}</p>
     ${apostas.map((a,i)=>`
-      <div style="
-        margin:8px 0;
-        padding:8px;
-        border:1px solid #2e7d32;
-        border-radius:6px;
-        font-size:14px">
-        <b>Aposta ${i+1}</b><br>
-        ${a.join(" - ")}
+      <div style="margin:8px 0;padding:8px;border:1px solid #2e7d32;border-radius:6px">
+        <b>Aposta ${i+1}</b><br>${a.join(" - ")}
       </div>`).join("")}
   `;
   window.print();
