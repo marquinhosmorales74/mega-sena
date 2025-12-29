@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
-<title>Mega-Sena – Apostas Manuais e Automáticas</title>
+<title>Mega-Sena – Gerador de Apostas</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
@@ -46,11 +46,11 @@ input {
 }
 
 button {
-  padding: 10px 14px;
+  padding: 8px 12px;
   margin: 4px;
   border: none;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
 }
 
@@ -58,6 +58,7 @@ button {
 .auto { background: #6a1b9a; color: white; }
 .pdf { background: #2e7d32; color: white; }
 .clear { background: #b71c1c; color: white; }
+.del { background: #c62828; color: white; font-size: 12px; }
 
 .apostas {
   margin-top: 15px;
@@ -68,7 +69,14 @@ button {
   background: white;
   padding: 8px;
   border-radius: 6px;
-  margin-bottom: 5px;
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.aposta-numeros {
+  font-size: 14px;
 }
 
 /* PDF */
@@ -104,7 +112,7 @@ const lista = document.getElementById("lista");
 let selecionados = [];
 let apostas = JSON.parse(localStorage.getItem("apostas")) || [];
 
-// cria grade
+// grade 1–60
 for (let i = 1; i <= 60; i++) {
   const d = document.createElement("div");
   d.className = "numero";
@@ -134,40 +142,43 @@ function adicionarManual() {
 function apostaAutomatica() {
   let jogo;
   do {
-    jogo = gerarJogoInteligente();
+    jogo = gerarJogo();
   } while (!jogoValido(jogo));
 
   apostas.push(jogo.sort((a,b)=>a-b));
   salvar();
 }
 
-function gerarJogoInteligente() {
-  const nums = [];
-  while (nums.length < 6) {
-    const n = Math.floor(Math.random() * 60) + 1;
-    if (!nums.includes(n)) nums.push(n);
+function gerarJogo() {
+  const n = [];
+  while (n.length < 6) {
+    const r = Math.floor(Math.random() * 60) + 1;
+    if (!n.includes(r)) n.push(r);
   }
-  return nums;
+  return n;
 }
 
-function jogoValido(jogo) {
-  const pares = jogo.filter(n => n % 2 === 0).length;
-  const baixos = jogo.filter(n => n <= 30).length;
-
-  // critérios “inteligentes”
+function jogoValido(j) {
+  const pares = j.filter(n => n % 2 === 0).length;
+  const baixos = j.filter(n => n <= 30).length;
   if (pares < 2 || pares > 4) return false;
   if (baixos < 2 || baixos > 4) return false;
 
-  // evita sequências longas
-  const ordenado = jogo.slice().sort((a,b)=>a-b);
+  const o = j.slice().sort((a,b)=>a-b);
   let seq = 1;
-  for (let i = 1; i < ordenado.length; i++) {
-    if (ordenado[i] === ordenado[i-1] + 1) {
+  for (let i = 1; i < o.length; i++) {
+    if (o[i] === o[i-1] + 1) {
       seq++;
       if (seq >= 3) return false;
     } else seq = 1;
   }
   return true;
+}
+
+function excluirAposta(i) {
+  if (!confirm("Excluir esta aposta?")) return;
+  apostas.splice(i, 1);
+  salvar();
 }
 
 function limpar() {
@@ -183,10 +194,16 @@ function salvar() {
 function render() {
   lista.innerHTML = "";
   apostas.forEach((a, i) => {
-    const d = document.createElement("div");
-    d.className = "aposta-item";
-    d.textContent = `Aposta ${i+1}: ${a.join(" - ")}`;
-    lista.appendChild(d);
+    const div = document.createElement("div");
+    div.className = "aposta-item";
+
+    div.innerHTML = `
+      <div class="aposta-numeros">
+        <b>Aposta ${i+1}:</b> ${a.join(" - ")}
+      </div>
+      <button class="del" onclick="excluirAposta(${i})">Excluir</button>
+    `;
+    lista.appendChild(div);
   });
 }
 
