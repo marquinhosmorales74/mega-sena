@@ -5,6 +5,9 @@
 <title>Mega-Sena – Gerador de Apostas</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<!-- Biblioteca para PDF automático -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -72,18 +75,14 @@ button {
   margin-bottom: 6px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
-/* ===== ÁREA DO PDF ===== */
-.print-area {
+/* Área exclusiva do PDF */
+#print-area {
   display: none;
-}
-
-/* ===== IMPRESSÃO ===== */
-@media print {
-  body { background: white; }
-  .container { display: none; }
-  .print-area { display: block; }
+  background: white;
+  padding: 20px;
 }
 </style>
 </head>
@@ -104,11 +103,11 @@ button {
 
   <div class="apostas" id="lista"></div>
 
-  <button class="pdf" onclick="window.print()">Gerar PDF</button>
+  <button class="pdf" onclick="gerarPDF()">Gerar PDF</button>
 </div>
 
-<!-- PDF -->
-<div class="print-area">
+<!-- CONTEÚDO DO PDF -->
+<div id="print-area">
   <h1 style="color:#2e7d32">Mega-Sena</h1>
   <p><b>Apostador:</b> <span id="pdf-nome"></span></p>
   <p><b>Próximo sorteio:</b> <span id="pdf-data"></span></p>
@@ -126,6 +125,7 @@ campoNome.oninput = () => localStorage.setItem("nome", campoNome.value);
 let selecionados = [];
 let apostas = JSON.parse(localStorage.getItem("apostas")) || [];
 
+// cria grade
 for (let i = 1; i <= 60; i++) {
   const d = document.createElement("div");
   d.className = "numero";
@@ -187,7 +187,6 @@ function limpar() {
 function salvar() {
   localStorage.setItem("apostas",JSON.stringify(apostas));
   render();
-  atualizarPDF();
 }
 
 function render() {
@@ -195,7 +194,7 @@ function render() {
   apostas.forEach((a,i)=>{
     lista.innerHTML+=`
       <div class="aposta-item">
-        <div>${a.join(" - ")}</div>
+        <div><b>Aposta ${i+1}:</b> ${a.join(" - ")}</div>
         <button class="del" onclick="excluirAposta(${i})">Excluir</button>
       </div>`;
   });
@@ -207,7 +206,7 @@ function proximoSorteio() {
   return d.toLocaleDateString("pt-BR");
 }
 
-function atualizarPDF() {
+function gerarPDF() {
   document.getElementById("pdf-nome").textContent =
     localStorage.getItem("nome") || "-";
 
@@ -215,13 +214,21 @@ function atualizarPDF() {
 
   document.getElementById("pdf-apostas").innerHTML =
     apostas.map((a,i)=>`
-      <div style="border:1px solid #2e7d32;margin:6px 0;padding:6px">
+      <div style="border:1px solid #2e7d32;margin:8px 0;padding:8px">
         <b>Aposta ${i+1}</b><br>${a.join(" - ")}
       </div>`).join("");
+
+  const element = document.getElementById("print-area");
+
+  html2pdf().from(element).set({
+    margin: 10,
+    filename: 'apostas-mega-sena.pdf',
+    html2canvas: { scale: 2 },
+    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+  }).save();
 }
 
 render();
-atualizarPDF();
 </script>
 
 </body>
