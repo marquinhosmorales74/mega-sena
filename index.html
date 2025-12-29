@@ -79,10 +79,8 @@ button {
   font-size: 14px;
 }
 
-/* PDF */
 @media print {
-  body { background: white; }
-  button, .grid { display: none; }
+  button, .grid, input { display: none; }
 }
 </style>
 </head>
@@ -110,10 +108,14 @@ const grid = document.getElementById("grid");
 const lista = document.getElementById("lista");
 const campoNome = document.getElementById("nome");
 
+campoNome.value = localStorage.getItem("nomeApostador") || "";
+campoNome.addEventListener("input", () => {
+  localStorage.setItem("nomeApostador", campoNome.value);
+});
+
 let selecionados = [];
 let apostas = JSON.parse(localStorage.getItem("apostas")) || [];
 
-// grade 1–60
 for (let i = 1; i <= 60; i++) {
   const d = document.createElement("div");
   d.className = "numero";
@@ -142,10 +144,7 @@ function adicionarManual() {
 
 function apostaAutomatica() {
   let jogo;
-  do {
-    jogo = gerarJogo();
-  } while (!jogoValido(jogo));
-
+  do { jogo = gerarJogo(); } while (!jogoValido(jogo));
   apostas.push(jogo.sort((a,b)=>a-b));
   salvar();
 }
@@ -164,15 +163,6 @@ function jogoValido(j) {
   const baixos = j.filter(n => n <= 30).length;
   if (pares < 2 || pares > 4) return false;
   if (baixos < 2 || baixos > 4) return false;
-
-  const o = j.slice().sort((a,b)=>a-b);
-  let seq = 1;
-  for (let i = 1; i < o.length; i++) {
-    if (o[i] === o[i-1] + 1) {
-      seq++;
-      if (seq >= 3) return false;
-    } else seq = 1;
-  }
   return true;
 }
 
@@ -195,15 +185,11 @@ function salvar() {
 function render() {
   lista.innerHTML = "";
   apostas.forEach((a, i) => {
-    const div = document.createElement("div");
-    div.className = "aposta-item";
-    div.innerHTML = `
-      <div class="aposta-numeros">
-        <b>Aposta ${i+1}:</b> ${a.join(" - ")}
-      </div>
-      <button class="del" onclick="excluirAposta(${i})">Excluir</button>
-    `;
-    lista.appendChild(div);
+    lista.innerHTML += `
+      <div class="aposta-item">
+        <div class="aposta-numeros"><b>Aposta ${i+1}:</b> ${a.join(" - ")}</div>
+        <button class="del" onclick="excluirAposta(${i})">Excluir</button>
+      </div>`;
   });
 }
 
@@ -214,12 +200,12 @@ function proximoSorteio() {
 }
 
 function gerarPDF() {
+  const nome = localStorage.getItem("nomeApostador") || "-";
   if (apostas.length === 0) return alert("Nenhuma aposta");
-  const nomeApostador = campoNome.value || "-";
 
   document.body.innerHTML = `
     <h1 style="color:#2e7d32">Mega-Sena</h1>
-    <p><b>Apostador:</b> ${nomeApostador}</p>
+    <p><b>Apostador:</b> ${nome}</p>
     <p><b>Próximo sorteio:</b> ${proximoSorteio()}</p>
     ${apostas.map((a,i)=>`
       <div style="margin:8px 0;padding:8px;border:1px solid #2e7d32;border-radius:6px">
