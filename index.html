@@ -108,6 +108,7 @@ button {
 <script>
 const grid = document.getElementById("grid");
 const lista = document.getElementById("lista");
+const campoNome = document.getElementById("nome");
 
 let selecionados = [];
 let apostas = JSON.parse(localStorage.getItem("apostas")) || [];
@@ -196,7 +197,6 @@ function render() {
   apostas.forEach((a, i) => {
     const div = document.createElement("div");
     div.className = "aposta-item";
-
     div.innerHTML = `
       <div class="aposta-numeros">
         <b>Aposta ${i+1}:</b> ${a.join(" - ")}
@@ -215,9 +215,11 @@ function proximoSorteio() {
 
 function gerarPDF() {
   if (apostas.length === 0) return alert("Nenhuma aposta");
+  const nomeApostador = campoNome.value || "-";
+
   document.body.innerHTML = `
     <h1 style="color:#2e7d32">Mega-Sena</h1>
-    <p><b>Apostador:</b> ${nome.value || "-"}</p>
+    <p><b>Apostador:</b> ${nomeApostador}</p>
     <p><b>Próximo sorteio:</b> ${proximoSorteio()}</p>
     ${apostas.map((a,i)=>`
       <div style="margin:8px 0;padding:8px;border:1px solid #2e7d32;border-radius:6px">
