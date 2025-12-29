@@ -5,8 +5,6 @@
 <title>Mega-Sena – Gerador de Apostas</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
 <style>
 body {
   font-family: Arial, sans-serif;
@@ -52,12 +50,14 @@ button {
   margin: 4px;
   border: none;
   border-radius: 6px;
+  font-size: 13px;
   cursor: pointer;
 }
 
 .add { background: #1976d2; color: white; }
 .auto { background: #6a1b9a; color: white; }
 .pdf { background: #2e7d32; color: white; }
+.clear { background: #b71c1c; color: white; }
 .del { background: #c62828; color: white; }
 
 .apostas {
@@ -72,14 +72,26 @@ button {
   margin-bottom: 6px;
   display: flex;
   justify-content: space-between;
+  align-items: center;
 }
 
-#print-area {
-  position: absolute;
-  left: -9999px;
-  width: 210mm;
-  background: white;
-  padding: 20px;
+/* ==== PRINT ==== */
+@media print {
+  body {
+    background: white;
+  }
+
+  .container {
+    max-width: 100%;
+  }
+
+  button, .grid {
+    display: none;
+  }
+
+  .aposta-item {
+    border: 1px solid #2e7d32;
+  }
 }
 </style>
 </head>
@@ -88,90 +100,119 @@ button {
 
 <div class="container">
   <h1>Mega-Sena</h1>
+
   <input id="nome" placeholder="Nome do Apostador">
+
   <div class="grid" id="grid"></div>
 
-  <button class="add" onclick="addManual()">Aposta manual</button>
-  <button class="auto" onclick="auto()">Aposta automática</button>
+  <button class="add" onclick="adicionarManual()">Adicionar aposta manual</button>
+  <button class="auto" onclick="apostaAutomatica()">Aposta automática</button>
+  <button class="clear" onclick="limpar()">Limpar seleção</button>
 
-  <div id="lista"></div>
+  <div class="apostas" id="lista"></div>
 
   <button class="pdf" onclick="gerarPDF()">Gerar PDF</button>
 </div>
 
-<div id="print-area">
-  <h1>Mega-Sena</h1>
-  <p><b>Apostador:</b> <span id="pdf-nome"></span></p>
-  <p><b>Data:</b> <span id="pdf-data"></span></p>
-  <div id="pdf-apostas"></div>
-</div>
-
 <script>
-const grid=document.getElementById("grid");
-const lista=document.getElementById("lista");
-const nome=document.getElementById("nome");
+const grid = document.getElementById("grid");
+const lista = document.getElementById("lista");
+const campoNome = document.getElementById("nome");
 
-nome.value=localStorage.getItem("nome")||"";
-nome.oninput=()=>localStorage.setItem("nome",nome.value);
+campoNome.value = localStorage.getItem("nome") || "";
+campoNome.oninput = () => localStorage.setItem("nome", campoNome.value);
 
-let sel=[], apostas=JSON.parse(localStorage.getItem("apostas"))||[];
+let selecionados = [];
+let apostas = JSON.parse(localStorage.getItem("apostas")) || [];
 
-for(let i=1;i<=60;i++){
-  const d=document.createElement("div");
-  d.className="numero";
-  d.textContent=i.toString().padStart(2,"0");
-  d.onclick=()=>toggle(d,i);
+// cria grade
+for (let i = 1; i <= 60; i++) {
+  const d = document.createElement("div");
+  d.className = "numero";
+  d.textContent = i.toString().padStart(2, "0");
+  d.onclick = () => toggle(d, i);
   grid.appendChild(d);
 }
 
-function toggle(el,n){
-  if(sel.includes(n)){sel=sel.filter(x=>x!==n);el.classList.remove("sel");}
-  else if(sel.length<6){sel.push(n);el.classList.add("sel");}
-}
-
-function addManual(){
-  if(sel.length!==6)return alert("Escolha 6 dezenas");
-  apostas.push([...sel].sort((a,b)=>a-b));sel=[];save();
-}
-
-function auto(){
-  const n=[];
-  while(n.length<6){
-    const r=Math.floor(Math.random()*60)+1;
-    if(!n.includes(r))n.push(r);
+function toggle(el, n) {
+  if (selecionados.includes(n)) {
+    selecionados = selecionados.filter(x => x !== n);
+    el.classList.remove("sel");
+  } else {
+    if (selecionados.length >= 6) {
+      alert("Máximo de 6 dezenas");
+      return;
+    }
+    selecionados.push(n);
+    el.classList.add("sel");
   }
-  apostas.push(n.sort((a,b)=>a-b));save();
 }
 
-function save(){
+function adicionarManual() {
+  if (selecionados.length !== 6) {
+    alert("Escolha exatamente 6 dezenas");
+    return;
+  }
+  apostas.push([...selecionados].sort((a,b)=>a-b));
+  salvar();
+  limpar();
+}
+
+function apostaAutomatica() {
+  const n = [];
+  while (n.length < 6) {
+    const r = Math.floor(Math.random()*60)+1;
+    if (!n.includes(r)) n.push(r);
+  }
+  apostas.push(n.sort((a,b)=>a-b));
+  salvar();
+}
+
+function excluirAposta(i) {
+  apostas.splice(i,1);
+  salvar();
+}
+
+function limpar() {
+  selecionados=[];
+  document.querySelectorAll(".numero").forEach(n=>n.classList.remove("sel"));
+}
+
+function salvar() {
   localStorage.setItem("apostas",JSON.stringify(apostas));
   render();
 }
 
-function render(){
+function render() {
   lista.innerHTML="";
   apostas.forEach((a,i)=>{
     lista.innerHTML+=`
       <div class="aposta-item">
         <div><b>Aposta ${i+1}:</b> ${a.join(" - ")}</div>
-        <button class="del" onclick="apostas.splice(${i},1);save()">X</button>
+        <button class="del" onclick="excluirAposta(${i})">EXCLUIR</button>
       </div>`;
   });
 }
 
-function gerarPDF(){
-  document.getElementById("pdf-nome").textContent=nome.value||"-";
-  document.getElementById("pdf-data").textContent=new Date().toLocaleDateString("pt-BR");
-  document.getElementById("pdf-apostas").innerHTML=
-    apostas.map((a,i)=>`<p><b>Aposta ${i+1}:</b> ${a.join(" - ")}</p>`).join("");
+function proximoSorteio() {
+  const d = new Date();
+  while (![3,6].includes(d.getDay())) d.setDate(d.getDate()+1);
+  return d.toLocaleDateString("pt-BR");
+}
 
-  const file=(nome.value||"apostador").replace(/\s+/g,"_").toLowerCase();
+function gerarPDF() {
+  const titulo = document.querySelector("h1");
+  const nome = campoNome.value || "-";
 
-  html2pdf().set({
-    filename:`mega-sena_${file}.pdf`,
-    html2canvas:{scale:2},
-    jsPDF:{format:'a4'}
-  }).from(document.getElementById("print-area")).save();
+  const info = document.createElement("div");
+  info.innerHTML = `
+    <p><b>Apostador:</b> ${nome}</p>
+    <p><b>Próximo sorteio:</b> ${proximoSorteio()}</p>
+  `;
+
+  titulo.after(info);
+  window.print();
+  info.remove();
 }
 
 render();
