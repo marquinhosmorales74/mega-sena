@@ -5,7 +5,6 @@
 <title>Mega-Sena – Gerador de Apostas</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Biblioteca para gerar PDF automaticamente -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
@@ -78,18 +77,21 @@ button {
   align-items: center;
 }
 
-/* Área usada somente para gerar o PDF */
+/* 🔑 CORREÇÃO CRÍTICA PARA O PDF */
 #print-area {
-  display: none;
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  width: 210mm;
   background: white;
   padding: 20px;
+  visibility: visible;
 }
 </style>
 </head>
 
 <body>
 
-<!-- INTERFACE -->
 <div class="container">
   <h1>Mega-Sena</h1>
 
@@ -125,7 +127,6 @@ campoNome.oninput = () => localStorage.setItem("nome", campoNome.value);
 let selecionados = [];
 let apostas = JSON.parse(localStorage.getItem("apostas")) || [];
 
-// cria grade 1–60
 for (let i = 1; i <= 60; i++) {
   const d = document.createElement("div");
   d.className = "numero";
@@ -140,7 +141,7 @@ function toggle(el, n) {
     el.classList.remove("sel");
   } else {
     if (selecionados.length >= 6) {
-      alert("Máximo de 6 dezenas por aposta");
+      alert("Máximo de 6 dezenas");
       return;
     }
     selecionados.push(n);
@@ -229,9 +230,7 @@ function gerarPDF() {
     .replace(/\s+/g,"_")
     .toLowerCase();
 
-  const element = document.getElementById("print-area");
-
-  html2pdf().from(element).set({
+  html2pdf().from(document.getElementById("print-area")).set({
     margin: 10,
     filename: `mega-sena_${nomeArquivo}.pdf`,
     html2canvas: { scale: 2 },
