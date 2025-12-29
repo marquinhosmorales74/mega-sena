@@ -5,7 +5,7 @@
 <title>Mega-Sena – Gerador de Apostas</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<!-- Biblioteca para PDF automático -->
+<!-- Biblioteca para gerar PDF automaticamente -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <style>
@@ -78,7 +78,7 @@ button {
   align-items: center;
 }
 
-/* Área exclusiva do PDF */
+/* Área usada somente para gerar o PDF */
 #print-area {
   display: none;
   background: white;
@@ -125,7 +125,7 @@ campoNome.oninput = () => localStorage.setItem("nome", campoNome.value);
 let selecionados = [];
 let apostas = JSON.parse(localStorage.getItem("apostas")) || [];
 
-// cria grade
+// cria grade 1–60
 for (let i = 1; i <= 60; i++) {
   const d = document.createElement("div");
   d.className = "numero";
@@ -139,14 +139,20 @@ function toggle(el, n) {
     selecionados = selecionados.filter(x => x !== n);
     el.classList.remove("sel");
   } else {
-    if (selecionados.length >= 6) return alert("Máximo 6 dezenas");
+    if (selecionados.length >= 6) {
+      alert("Máximo de 6 dezenas por aposta");
+      return;
+    }
     selecionados.push(n);
     el.classList.add("sel");
   }
 }
 
 function adicionarManual() {
-  if (selecionados.length !== 6) return alert("Escolha 6 dezenas");
+  if (selecionados.length !== 6) {
+    alert("Escolha exatamente 6 dezenas");
+    return;
+  }
   apostas.push([...selecionados].sort((a,b)=>a-b));
   salvar();
   limpar();
@@ -201,8 +207,8 @@ function render() {
 }
 
 function proximoSorteio() {
-  const d=new Date();
-  while(![3,6].includes(d.getDay())) d.setDate(d.getDate()+1);
+  const d = new Date();
+  while (![3,6].includes(d.getDay())) d.setDate(d.getDate()+1);
   return d.toLocaleDateString("pt-BR");
 }
 
@@ -218,11 +224,16 @@ function gerarPDF() {
         <b>Aposta ${i+1}</b><br>${a.join(" - ")}
       </div>`).join("");
 
+  const nomeArquivo = (localStorage.getItem("nome") || "apostador")
+    .trim()
+    .replace(/\s+/g,"_")
+    .toLowerCase();
+
   const element = document.getElementById("print-area");
 
   html2pdf().from(element).set({
     margin: 10,
-    filename: 'apostas-mega-sena.pdf',
+    filename: `mega-sena_${nomeArquivo}.pdf`,
     html2canvas: { scale: 2 },
     jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
   }).save();
